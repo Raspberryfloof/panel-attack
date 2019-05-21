@@ -32,7 +32,48 @@ SCOREMODE_TA    = 1
 SCOREMODE_PDP64 = 2
 score_mode = SCOREMODE_TA
 
--- score lookup tables
+-- Combo score lookup tables
+-- Panel de Pon (SFC)
+-- The combo table includes the bug from the original SFC release:
+-- combos longer than 30 kept reading from data past the end of the
+-- actual score table, giving ridiculous values.
+-- Combos from 35 on were capped (and displayed "SPECIAL"), meaning
+-- every combo from 32 on gave broken point values.
+score_combo_PdP   = {    0,     0,     0,    20,    30,
+                        50,    60,    70,    80,   100,
+                       140,   170,   210,   250,   290,
+                       340,   390,   440,   490,   550,
+                       610,   680,   750,   820,   900,
+                       980,  1060,  1150,  1240,  1330,
+                         0, 33301, 33307, 33313, 33319,
+                     33319, 33319, 33319, 33319, 33319,
+                     33319, 33319, 33319, 33319, 33319,
+                     33319, 33319, 33319, 33319, 33319,
+                     33319, 33319, 33319, 33319, 33319,
+                     33319, 33319, 33319, 33319, 33319,
+                     33319, 33319, 33319, 33319, 33319,
+                     33319, 33319, 33319, 33319, 33319,
+                     33319, 33319, [0]=0}
+-- Tetris Attack (SNES)
+-- All combos above 30 are capped at (and display) 30, so they all give the same score.
+score_combo_TA    = {    0,     0,     0,    20,    30,
+                        50,    60,    70,    80,   100,
+                       140,   170,   210,   250,   290,
+                       340,   390,   440,   490,   550,
+                       610,   680,   750,   820,   900,
+                       980,  1060,  1150,  1240,  1330,
+                      1330,  1330,  1330,  1330,  1330,
+                      1330,  1330,  1330,  1330,  1330,
+                      1330,  1330,  1330,  1330,  1330,
+                      1330,  1330,  1330,  1330,  1330,
+                      1330,  1330,  1330,  1330,  1330,
+                      1330,  1330,  1330,  1330,  1330,
+                      1330,  1330,  1330,  1330,  1330,
+                      1330,  1330,  1330,  1330,  1330,
+                      1330,  1330, [0]=0}
+-- Panel de Pon (GCN, Nintendo Puzzle Collection)
+-- The combo score table seems to reference the original PdP release,
+-- since scores jump massively at exactly 32 combos, just like the original game.
 score_combo_PdP64 = {    0,     0,     0,    30,    60,
                        150,   190,   230,   270,   310,
                        400,   450,   500,   550,   700,
@@ -48,16 +89,23 @@ score_combo_PdP64 = {    0,     0,     0,    30,    60,
                      37200, 38000, 38800, 39600, 40400,
                      41200, 42000, 42800, 43600, 44400,
                      45200, 46000, [0]=0} --size 40
-score_combo_TA = {  0,    0,    0,   20,   30,
-                   50,   60,   70,   80,  100,
-                  140,  170,  210,  250,  290,
-                  340,  390,  440,  490,  550,
-                  610,  680,  750,  820,  900,
-                  980, 1060, 1150, 1240, 1330, [0]=0}
 
-score_chain_TA = {  0,   50,   80,  150,  300,
-                  400,  500,  700,  900, 1100,
-                 1300, 1500, 1800, [0]=0}
+-- Chain score lookup tables
+-- Panel de Pon (SFC)
+-- Reads out of bounds in this table too, so gives 0 points for chains over x13.
+score_chain_PdP   = {   0,   50,   80,  150,  300,
+                      400,  500,  700,  900, 1100,
+                     1300, 1500, 1800,    0, [0]=0}
+-- Tetris Attack (SNES)
+-- Reads out of bounds in this table too, so gives 0 points for chains over x13.
+score_chain_TA    = {   0,   50,   80,  150,  300,
+                      400,  500,  700,  900, 1100,
+                     1300, 1500, 1800,    0, [0]=0}
+-- Panel de Pon (GCN, Nintendo Puzzle Collection)
+-- Gives the same amount of points for any chain x13 or higher.
+score_chain_PdP64 = {   0,   50,   80,  150,  300,
+                      400,  500,  700,  900, 1100,
+                     1300, 1500, 1800, 1800, [0]=0}
 
 GFX_SCALE = 3
 
