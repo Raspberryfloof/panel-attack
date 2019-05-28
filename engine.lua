@@ -142,10 +142,12 @@ Stack = class(function(s, which, mode, speed, difficulty, player_number)
     s.swap_1 = false   -- attempt to initiate a swap on this frame
     s.swap_2 = false
 
-    s.cur_wait_time = 25   -- number of ticks to wait before the cursor begins
+    s.cur_wait_time = 10   -- number of ticks to wait before the cursor begins
                -- to move quickly... it's based on P1CurSensitivity
     s.cur_timer = 0   -- number of ticks for which a new direction's been pressed
-    s.cur_dir = nil     -- the direction pressed
+    s.cur_dir = nil     -- the direction chosen for movement this frame
+    s.cur_dir_newly_pressed = false -- whether that direction was newly pressed this frame
+    s.cur_buttons = {}  -- the buttons pressed this frame
     s.cur_row = 7  -- the row the cursor's on
     s.cur_col = 3  -- the column the left half of the cursor's on
     s.top_cur_row = s.height + (s.mode == "puzzle" and 0 or -1)
@@ -1068,7 +1070,7 @@ function Stack.PdP(self)
 
   -- CURSOR MOVEMENT
   self.move_sound = true
-  if self.cur_dir and (self.cur_timer == 0 or
+  if self.cur_dir and (self.cur_dir_newly_pressed or
     self.cur_timer == self.cur_wait_time) and not self.cursor_lock then
     local prev_row = self.cur_row
     local prev_col = self.cur_col
@@ -1083,11 +1085,6 @@ function Stack.PdP(self)
     end
   else
     self.cur_row = bound(1, self.cur_row, self.top_cur_row)
-  end
-  if self.cur_timer ~= self.cur_wait_time then
-    self.cur_timer = self.cur_timer + 1
-    
-    
   end
 
   -- SWAPPING

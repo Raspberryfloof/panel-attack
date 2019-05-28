@@ -113,8 +113,11 @@ end
 
 function Stack.controls(self)
   local new_dir = nil
+  local new_buttons = {}
+  local button_newly_pressed = false
   local sdata = self.input_state
   local raise, swap, up, down, left, right = unpack(base64decode[sdata])
+
   if (raise) and (not self.prevent_manual_raise) then
     self.manual_raise = true
     self.manual_raise_yet = false
@@ -134,11 +137,47 @@ function Stack.controls(self)
   end
 
   if new_dir == self.cur_dir then
+    self.cur_dir_newly_pressed = false
+  else
+    self.cur_dir = new_dir
+    self.cur_dir_newly_pressed = true
+  end
+
+  if raise then
+    new_buttons["raise"] = true
+  end
+  if swap then
+    new_buttons["swap"] = true
+  end
+  if up then
+    new_buttons["up"] = true
+  end
+  if down then
+    new_buttons["down"] = true
+  end
+  if left then
+    new_buttons["left"] = true
+  end
+  if right then
+    new_buttons["right"] = true
+  end
+
+  if new_buttons then
+    for k, v in pairs(new_buttons) do
+      if not self.cur_buttons[k] then
+        button_newly_pressed = true
+        break
+      end
+    end
+  end
+
+  if not button_newly_pressed then
     if self.cur_timer ~= self.cur_wait_time then
       self.cur_timer = self.cur_timer + 1
     end
   else
-    self.cur_dir = new_dir
     self.cur_timer = 0
   end
+
+  self.cur_buttons = new_buttons
 end
