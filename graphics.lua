@@ -1,68 +1,29 @@
---int Font_NumRed;
---int Font_NumBlue;
-
---int P1ScoreDisplay;
---int P1ScoreRender;
---int P1ScoreDigits[5];
-
---int GameTimeDisplay;
---int GameTimeDisplayPosX;
---int GameTimeDisplayPosY;
---int GameTimeRender;
---int GameTimeDigits[7];
-
---int Graphics_Ready321;
-
---int P1SpeedLVDisplay;
---int P1SpeedLVRender;
---int P1SpeedLVDigits[3];
---int MrStopState;
---int MrStopTimer;
---int MrStopAni[25];
-
---int Graphics_level;
---int Graphics_MrStop[2];
---int Graphics_Difficulty[5];
-
---int NumConfettis;
---#define MAXCONFETTIS     8
-
---int Confettis[8][5];
---#define CONFETTI_TIMER   0
---#define CONFETTI_RADIUS  1
---#define CONFETTI_ANGLE   2
---#define CONFETTI_X       3
---#define CONFETTI_Y       4
---int ConfettiAni[48];
---int ConfettiBuf[6][2];
---#define CONFETTI_STARTTIMER   40
---#define CONFETTI_STARTRADIUS 150
 require("input")
 require("util")
 
 local floor = math.floor
 local ceil = math.ceil
-local garbage_match_time = #garbage_bounce_table
 
 function load_img(path_and_name)
   local img
-  if pcall(function () 
+  if pcall(function ()
     img = love.image.newImageData("assets/"..(config.assets_dir or default_assets_dir).."/"..path_and_name)
-  end) then 
+  end) then
     if config.assets_dir and config.assets_dir ~= default_assets_dir then
       print("loaded custom asset: "..config.assets_dir.."/"..path_and_name)
     end
   else
-    img = love.image.newImageData("assets/"..default_assets_dir.."/"..path_and_name)
+    if pcall(function ()
+      img = love.image.newImageData("assets/"..default_assets_dir.."/"..path_and_name)
+    end) then
+      print("loaded okay.")
+    else
+      img = nil
+    end
   end
-  -- local w, h = img:getWidth(), img:getHeight()
-  -- local wp = math.pow(2, math.ceil(math.log(w)/math.log(2)))
-  -- local hp = math.pow(2, math.ceil(math.log(h)/math.log(2)))
-  -- if wp ~= w or hp ~= h then
-    -- local padded = love.image.newImageData(wp, hp)
-    -- padded:paste(img, 0, 0)
-    -- img = padded
-  -- end
+  if img == nil then
+    return nil
+  end
   local ret = love.graphics.newImage(img)
   ret:setFilter("nearest","nearest")
   return ret
@@ -114,12 +75,17 @@ function grectangle(mode, x, y, w, h)
 end
 
 function gprint(str, x, y)
+  x = x or 0
+  y = y or 0
+  set_color(0, 0, 0, 1)
+  gfx_q:push({love.graphics.print, {str, x+1, y+1}})
+  set_color(1, 1, 1, 1)
   gfx_q:push({love.graphics.print, {str, x, y}})
 end
 
 local _r, _g, _b, _a
 function set_color(r, g, b, a)
-  a = a or 255
+  a = a or 1
   -- only do it if this color isn't the same as the previous one...
   if _r~=r or _g~=g or _b~=b or _a~=a then
       _r,_g,_b,_a = r,g,b,a
@@ -127,19 +93,28 @@ function set_color(r, g, b, a)
   end
 end
 
+function file_exists(name)
+   local f=io.open(name,"r")
+   if f~=nil then io.close(f) return true else return false end
+end
+
+IMG_stagecount = 1
 function graphics_init()
-  --Font_NumRed=LoadImage("graphics\Font_NumRed.bmp");
-  --Font_NumBlue=LoadImage("graphics\Font_NumBlue.bmp");
+  title = load_img("menu/title.png")
+  charselect = load_img("menu/charselect.png")
+  IMG_stages = {}
 
-  --GameTimeDisplay=NewImage(64,16);
-  --P1ScoreDisplay=NewImage(40,16);
-  --P1SpeedLVDisplay=NewImage(48,48);
-
-  --Graphics_Ready321=LoadImage("graphics\Ready321.bmp");
-  --Graphics_TIME=LoadImage("graphics\time.bmp");
-  --Graphics_level=LoadImage("graphics\level.bmp");
-  --for(a=0;a<2;a++) Graphics_MrStop[a]=LoadImage("graphics\MrStop"+str(a)+".bmp");
-  --for(a=0;a<5;a++) Graphics_Difficulty[a]=LoadImage("graphics\diffic"+str(a)+".bmp");
+  IMG_stagecount = 1
+  i = 0
+  while i > -1 do
+    IMG_stages[IMG_stagecount] = load_img("stages/"..tostring(IMG_stagecount)..".png")
+    if IMG_stages[IMG_stagecount] == nil then
+      i=-1
+      break
+    else
+      IMG_stagecount=IMG_stagecount+1
+    end
+  end
 
   IMG_panels = {}
   for i=1,8 do
@@ -242,7 +217,7 @@ function graphics_init()
     IMG_cards[true][i] = load_img("chain00.png")
   end
   IMG_character_icons = {}
-  for k,name in ipairs(characters) do
+  for _, name in ipairs(characters) do
     IMG_character_icons[name] = load_img(""..name.."/icon.png")
   end
   local MAX_SUPPORTED_PLAYERS = 2
@@ -258,7 +233,7 @@ function graphics_init()
     IMG_char_sel_cursor_halves.left[player_num] = {}
     for position_num=1,2 do
       local cur_width, cur_height = IMG_char_sel_cursors[player_num][position_num]:getDimensions()
-      local half_width, half_height = cur_width/2, cur_height/2
+      local half_width, half_height = cur_width/2, cur_height/2 -- TODO: is these unused vars an error ??? -Endu
       IMG_char_sel_cursor_halves["left"][player_num][position_num] = love.graphics.newQuad(0,0,half_width,cur_height,cur_width, cur_height)
     end
     IMG_char_sel_cursor_halves.right[player_num] = {}
@@ -269,11 +244,9 @@ function graphics_init()
     end
   end
   character_display_names = {}
-  for k, original_name in ipairs(characters) do
+  for _, original_name in ipairs(characters) do
     name_txt_file = love.filesystem.newFile("assets/"..config.assets_dir.."/"..original_name.."/name.txt")
-    --print(original_name)
     open_success, err = name_txt_file:open("r")
-    --if err then print(err) end
     local display_name = name_txt_file:read(name_txt_file:getSize())
     if display_name then
       character_display_names[original_name] = display_name
@@ -289,22 +262,6 @@ function graphics_init()
   for k,v in pairs(character_display_names) do
     character_display_names_to_original_names[v] = k
   end
-  --for(a=0;a<2;a++) MrStopAni[a]=5;
-  --for(a=2;a<5;a++) MrStopAni[a]=8;
-  --for(a=5;a<25;a++) MrStopAni[a]=16;
-
-  --[[file=FileOpen("graphics\timeslide.ani",FILE_READ);
-  for(a=1;a<65;a++)
-  {
-    TimeSlideAni[a] = FileReadByte(file);
-  }
-  FileClose(file);
-  file=FileOpen("graphics\confetti.ani",FILE_READ);
-  for(a=0;a<40;a++)
-  {
-    ConfettiAni[a] = FileReadByte(file);
-  }
-  FileClose(file);--]]
 end
 
 function Stack.update_cards(self)
@@ -329,12 +286,6 @@ function Stack.draw_cards(self)
       local draw_y = (11-card.y) * 16 + self.pos_y + self.displacement
           - card_animation[card.frame]
       draw(IMG_cards[card.chain][card.n], draw_x, draw_y)
-  --    card.frame = card.frame + 1
-  --    if(card_animation[card.frame]==nil) then
-  --      self.card_q:pop()
-  --    end
-    else
-  --    card.frame = card.frame + 1
     end
   end
 end
@@ -347,11 +298,15 @@ function Stack.render(self)
     mx = mx / GFX_SCALE
     my = my / GFX_SCALE
   end
+  local portrait_w, portrait_h = IMG_garbage[self.character].portrait:getDimensions()
   if P1 == self then
-    draw(IMG_garbage[self.character].portrait, self.pos_x, self.pos_y)
+    draw(IMG_garbage[self.character].portrait, self.pos_x, self.pos_y, 0, 96/portrait_w, 192/portrait_h)
   else
-    draw(IMG_garbage[self.character].portrait, self.pos_x+96, self.pos_y, 0, -1)
+    draw(IMG_garbage[self.character].portrait, self.pos_x+96, self.pos_y, 0, (96/portrait_w)*-1, 192/portrait_h)
   end
+  local metal_w, metal_h = IMG_metal:getDimensions()
+  local metall_w, metall_h = IMG_metal_l:getDimensions()
+  local metalr_w, metalr_h = IMG_metal_r:getDimensions()
   local shake_idx = #shake_arr - self.shake_time
   local shake = ceil((shake_arr[shake_idx] or 0) * 13)
   for row=0,self.height do
@@ -369,60 +324,72 @@ function Stack.render(self)
           if panel.x_offset == 0 and panel.y_offset == 0 then
             -- draw the entire block!
             if panel.metal then
-              draw(IMG_metal_l, draw_x, draw_y)
-              draw(IMG_metal_r, draw_x+16*(panel.width-1)+8,draw_y)
+              draw(IMG_metal_l, draw_x, draw_y, 0, 8/metall_w, 16/metall_h)
+              draw(IMG_metal_r, draw_x+16*(panel.width-1)+8,draw_y, 0, 8/metalr_w, 16/metalr_h)
               for i=1,2*(panel.width-1) do
-                draw(IMG_metal, draw_x+8*i, draw_y)
+                draw(IMG_metal, draw_x+8*i, draw_y, 0, 8/metal_w, 16/metal_h)
               end
             else
               local height, width = panel.height, panel.width
               local top_y = draw_y - (height-1) * 16
               local use_1 = ((height-(height%2))/2)%2==0
+              local filler_w, filler_h = imgs.filler1:getDimensions()
               for i=0,height-1 do
                 for j=1,width-1 do
                   draw((use_1 or height<3) and imgs.filler1 or
-                    imgs.filler2, draw_x+16*j-8, top_y+16*i)
+                    imgs.filler2, draw_x+16*j-8, top_y+16*i, 0, 16/filler_w, 16/filler_h)
                   use_1 = not use_1
                 end
               end
               if height%2==1 then
-                draw(imgs.face, draw_x+8*(width-1), top_y+16*((height-1)/2))
+                local face_w, face_h = imgs.face:getDimensions()
+                draw(imgs.face, draw_x+8*(width-1), top_y+16*((height-1)/2), 0, 16/face_w, 16/face_h)
               else
-                draw(imgs.doubleface, draw_x+8*(width-1), top_y+16*((height-2)/2))
+                local face_w, face_h = imgs.doubleface:getDimensions()
+                draw(imgs.doubleface, draw_x+8*(width-1), top_y+16*((height-2)/2), 0, 16/face_w, 32/face_h)
               end
-              draw(imgs.left, draw_x, top_y, 0, 1, height*16)
-              draw(imgs.right, draw_x+16*(width-1)+8, top_y, 0, 1, height*16)
-              draw(imgs.top, draw_x, top_y, 0, width*16)
-              draw(imgs.bot, draw_x, draw_y+14, 0, width*16)
-              draw(imgs.topleft, draw_x, top_y)
-              draw(imgs.topright, draw_x+16*width-8, top_y)
-              draw(imgs.botleft, draw_x, draw_y+13)
-              draw(imgs.botright, draw_x+16*width-8, draw_y+13)
+              local corner_w, corner_h = imgs.topleft:getDimensions()
+              local lr_w, lr_h = imgs.left:getDimensions()
+              local topbottom_w, topbottom_h = imgs.top:getDimensions()
+              draw(imgs.left, draw_x, top_y, 0, 8/lr_w, (1/lr_h)*height*16)
+              draw(imgs.right, draw_x+16*(width-1)+8, top_y, 0, 8/lr_w, (1/lr_h)*height*16)
+              draw(imgs.top, draw_x, top_y, 0, (1/topbottom_w)*width*16, 2/topbottom_h)
+              draw(imgs.bot, draw_x, draw_y+14, 0, (1/topbottom_w)*width*16, 2/topbottom_h)
+              draw(imgs.topleft, draw_x, top_y, 0, 8/corner_w, 3/corner_h)
+              draw(imgs.topright, draw_x+16*width-8, top_y, 0, 8/corner_w, 3/corner_h)
+              draw(imgs.botleft, draw_x, draw_y+13, 0, 8/corner_w, 3/corner_h)
+              draw(imgs.botright, draw_x+16*width-8, draw_y+13, 0, 8/corner_w, 3/corner_h)
             end
           end
           if panel.state == "matched" then
             local flash_time = panel.initial_time - panel.timer
+
+
+            local flashed_w, flashed_h = IMG_metal_flash:getDimensions()
             if flash_time >= self.FRAMECOUNT_FLASH then
               if panel.timer > panel.pop_time then
                 if panel.metal then
-                  draw(IMG_metal_l, draw_x, draw_y)
-                  draw(IMG_metal_r, draw_x+8, draw_y)
+                  draw(IMG_metal_l, draw_x, draw_y, 0, 8/metall_w, 16/metall_h)
+                  draw(IMG_metal_r, draw_x+8, draw_y, 0, 8/metalr_w, 16/metalr_h)
                 else
-                  draw(imgs.pop, draw_x, draw_y)
+                  local popped_w, popped_h = imgs.pop:getDimensions()
+                  draw(imgs.pop, draw_x, draw_y, 0, 16/popped_w, 16/popped_h)
                 end
               elseif panel.y_offset == -1 then
-                draw(IMG_panels[panel.color][
-                    garbage_bounce_table[panel.timer] or 1], draw_x, draw_y)
+                local p_w, p_h = IMG_panels[panel.color][1]:getDimensions()
+                draw(IMG_panels[panel.color][1], draw_x, draw_y, 0, 16/p_w, 16/p_h)
               end
             elseif flash_time % 2 == 1 then
               if panel.metal then
-                draw(IMG_metal_l, draw_x, draw_y)
-                draw(IMG_metal_r, draw_x+8, draw_y)
+                draw(IMG_metal_l, draw_x, draw_y, 0, 8/metall_w, 16/metall_h)
+                draw(IMG_metal_r, draw_x+8, draw_y, 0, 8/metalr_w, 16/metalr_h)
               else
-                draw(imgs.pop, draw_x, draw_y)
+                local popped_w, popped_h = imgs.pop:getDimensions()
+                draw(imgs.pop, draw_x, draw_y, 0, 16/popped_w, 16/popped_h)
               end
             else
-              draw(imgs.flash, draw_x, draw_y)
+              local flashed_w, flashed_h = imgs.flash:getDimensions()
+              draw(imgs.flash, draw_x, draw_y, 0, 16/flashed_w, 16/flashed_h)
             end
           end
           --this adds the drawing of state flags to garbage panels
@@ -458,13 +425,16 @@ function Stack.render(self)
             end
           elseif panel.state == "dimmed" then
             draw_frame = 7
+          elseif panel.fell_from_garbage then
+            draw_frame = garbage_bounce_table[panel.fell_from_garbage] or 1
           elseif self.danger_col[col] then
             draw_frame = danger_bounce_table[
               wrap(1,self.danger_timer+1+floor((col-1)/2),#danger_bounce_table)]
           else
             draw_frame = 1
           end
-          draw(IMG_panels[panel.color][draw_frame], draw_x, draw_y)
+          local panel_w, panel_h = IMG_panels[panel.color][draw_frame]:getDimensions()
+          draw(IMG_panels[panel.color][draw_frame], draw_x, draw_y, 0, 16/panel_w, 16/panel_h)
           if config.debug_mode then
             gprint(panel.state, draw_x*3, draw_y*3)
             if panel.match_anyway ~= nil then
@@ -497,8 +467,8 @@ function Stack.render(self)
       local time_left = 120 - (self.game_stopwatch or 120)/60
       local mins = math.floor(time_left/60)
       local secs = math.ceil(time_left% 60)
-      if secs == 60 then 
-        secs = 0 
+      if secs == 60 then
+        secs = 0
         mins = mins+1
       end
       gprint("Time: "..string.format("%01d:%02d",mins,secs), self.score_x, 160)
@@ -532,19 +502,12 @@ function Stack.render(self)
       gprint(inputs_to_print, self.score_x, 295)
     end
     if match_type then gprint(match_type, 375, 10) end
-    if P1 and P1.game_stopwatch and tonumber(P1.game_stopwatch) then 
+    if P1 and P1.game_stopwatch and tonumber(P1.game_stopwatch) then
       gprint(frames_to_time_string(P1.game_stopwatch, P1.mode == "endless"), 385, 25)
     end
     if not config.debug_mode then
       gprint(join_community_msg or "", 330, 560)
     end
-    --gprint("Player"..self.player_number, self.score_x,265)
-    --gprint("Panel buffer: "..#self.panel_buffer, self.score_x, 190)
-    --[[local danger = {}
-    for i=1,6 do
-      danger[i] = self.panels[12][i]:dangerous()
-    end
-    gprint("Danger: "..table.concat(map(function(x) if x then return "1" else return "0" end end, danger)), self.score_x, 205)--]]
   end
   self:draw_cards()
   self:render_cursor()
@@ -564,92 +527,26 @@ function scale_letterbox(width, height, w_ratio, h_ratio)
   return (width - scaled_width) / 2, 0, scaled_width, height
 end
 
---[[
-void EnqueueConfetti(int x, int y)
-{
-  int b, c;
-  if(NumConfettis==MAXCONFETTIS)
-  {
-    for(c=0;c<NumConfettis;c++)
-    {
-      for(b=0;b<5;b++) Confettis[c][b]=Confettis[c+1][b];
-    }
-    NumConfettis--;
-  }
-  Confettis[NumConfettis][CONFETTI_TIMER]=CONFETTI_STARTTIMER;
-  Confettis[NumConfettis][CONFETTI_RADIUS]=CONFETTI_STARTRADIUS;
-  Confettis[NumConfettis][CONFETTI_ANGLE]=0;
-  Confettis[NumConfettis][CONFETTI_X]=x;
-  Confettis[NumConfettis][CONFETTI_Y]=y;
-  NumConfettis++;
-}
-
-void Render_Confetti()
-{
-  int a, b, c;
-  int r, an, t;
-
-  for(a=0;a<NumConfettis;a++)
-  {
-    t=Confettis[a][CONFETTI_TIMER]-1;
-    r=Confettis[a][CONFETTI_RADIUS]-ConfettiAni[t];
-    an=Confettis[a][CONFETTI_ANGLE]-6;
-
-    ConfettiBuf[0][0]=(r*cos(an))>>16;
-    ConfettiBuf[0][1]=(r*sin(an))>>16;
-    ConfettiBuf[1][0]=(r*cos(an+60))>>16;
-    ConfettiBuf[1][1]=(r*sin(an+60))>>16;
-    ConfettiBuf[2][0]=(r*cos(an+120))>>16;
-    ConfettiBuf[2][1]=(r*sin(an+120))>>16;
-    for(c=0;c<3;c++)
-    {
-      ConfettiBuf[c+3][0]=0-ConfettiBuf[c][0];
-      ConfettiBuf[c+3][1]=0-ConfettiBuf[c][1];
-    }
-    for(c=0;c<6;c++)
-    {
-      ConfettiBuf[c][0]+=Confettis[a][CONFETTI_X];
-      ConfettiBuf[c][1]+=Confettis[a][CONFETTI_Y];
-
-      TBlit(ConfettiBuf[c][0],ConfettiBuf[c][1],Graphics_Confetti,screen);
-    }
-
-    if(!t)
-    {
-      for(c=a;c<NumConfettis;c++)
-      {
-        for(b=0;b<5;b++) Confettis[c][b]=Confettis[c+1][b];
-      }
-      NumConfettis--;
-      if(a~=(NumConfettis-1)) a--;
-    }
-    else
-    {
-      Confettis[a][CONFETTI_TIMER]=t;
-      Confettis[a][CONFETTI_RADIUS]=r;
-      Confettis[a][CONFETTI_ANGLE]=an;
-    }
-  }
-}--]]
-
 function Stack.render_cursor(self)
+  local shake_idx = #shake_arr - self.shake_time
+  local shake = ceil((shake_arr[shake_idx] or 0) * 13)
   if self.countdown_timer then
     if self.CLOCK % 2 == 0 then
       draw(IMG_cursor[1],
         (self.cur_col-1)*16+self.pos_x-4,
-        (11-(self.cur_row))*16+self.pos_y-4+self.displacement)
+        (11-(self.cur_row))*16+self.pos_y-4+self.displacement-shake)
     end
   else
     draw(IMG_cursor[(floor(self.CLOCK/16)%2)+1],
       (self.cur_col-1)*16+self.pos_x-4,
-      (11-(self.cur_row))*16+self.pos_y-4+self.displacement)
+      (11-(self.cur_row))*16+self.pos_y-4+self.displacement-shake)
   end
 end
 
 function Stack.render_countdown(self)
   if self.do_countdown and self.countdown_CLOCK then
     local ready_x = self.pos_x + 12
-    local initial_ready_y = self.pos_y 
+    local initial_ready_y = self.pos_y
     local ready_y_drop_speed = 6
     local countdown_x = self.pos_x + 40
     local countdown_y = self.pos_y + 64
