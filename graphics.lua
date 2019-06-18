@@ -174,7 +174,7 @@ function graphics_init()
     for _,part in ipairs(g_parts) do
       imgs[part] = load_img(""..v.."/"..part..".png")
     end
-    for h=1,14 do
+    for h=1,13 do
       IMG_telegraph_garbage[h] = {}
       IMG_telegraph_garbage[h][6] = load_img("".."telegraph/"..h.."-tall.png")
     end
@@ -687,13 +687,21 @@ function Stack.render_telegraph(self)
     local draw_x = telegraph_to_render.pos_x
     local draw_y = telegraph_to_render.pos_y
     if telegraph_to_render.garbage_queue.ghost_chain then
-      draw(IMG_telegraph_garbage[telegraph_to_render.garbage_queue.ghost_chain][6], draw_x, draw_y)
+      if telegraph_to_render.garbage_queue.ghost_chain > 12 then
+        draw(IMG_telegraph_garbage[13][6], draw_x, draw_y)
+      else
+        draw(IMG_telegraph_garbage[telegraph_to_render.garbage_queue.ghost_chain][6], draw_x, draw_y)
+      end
     end
     while current_block do
       --TODO: create a way to draw telegraphs from right to left
       if self.CLOCK - current_block.frame_earned >= GARBAGE_TRANSIT_TIME then
         if not current_block[3]--[[is_metal]] then
-          draw(IMG_telegraph_garbage[current_block[2]--[[height]]][current_block[1]--[[width]]], draw_x, draw_y)
+          if current_block[2] > 12 then
+            draw(IMG_telegraph_garbage[13--[[height]]][current_block[1]--[[width]]], draw_x, draw_y)
+          else
+            draw(IMG_telegraph_garbage[current_block[2]--[[height]]][current_block[1]--[[width]]], draw_x, draw_y)
+          end
         else
           draw(IMG_telegraph_metal, draw_x, draw_y)
         end
