@@ -124,7 +124,8 @@ end
 
 function normal_key(key) return this_frame_keys[key] end
 
-function menu_key_func(fixed, configurable, rept)
+function menu_key_func(fixed, configurable, rept, sound)
+  sound = sound or nil
   local query = normal_key
   if rept then
     query = repeating_key
@@ -148,16 +149,19 @@ function menu_key_func(fixed, configurable, rept)
             not menu_reserved_keys[keyname]
       end
     end
+    if res and sound ~= nil then
+      play_optional_sfx(sound())
+    end
     return res
   end
 end
 
-menu_up = menu_key_func({"up"}, {"up"}, true)
-menu_down = menu_key_func({"down"}, {"down"}, true)
-menu_left = menu_key_func({"left"}, {"left"}, true)
-menu_right = menu_key_func({"right"}, {"right"}, true)
-menu_enter = menu_key_func({"return","kenter","z"}, {"swap1"}, false)
-menu_escape = menu_key_func({"escape","x"}, {"swap2"}, false)
+menu_up = menu_key_func({"up"}, {"up"}, true, function() return sounds.SFX.menu_move end )
+menu_down = menu_key_func({"down"}, {"down"}, true, function() return sounds.SFX.menu_move end)
+menu_left = menu_key_func({"left"}, {"left"}, true, function() return sounds.SFX.menu_move end)
+menu_right = menu_key_func({"right"}, {"right"}, true, function() return sounds.SFX.menu_move end)
+menu_enter = menu_key_func({"return","kenter","z"}, {"swap1"}, false, function() return sounds.SFX.menu_validate end)
+menu_escape = menu_key_func({"escape","x"}, {"swap2"}, false, function() return sounds.SFX.menu_cancel end)
 menu_backspace = menu_key_func({"backspace"}, {"backspace"}, true)
 
 do
@@ -907,10 +911,12 @@ function main_character_select()
             end
           elseif active_str == "random" then
             config.character = uniformly(characters)
+            play_selection_sfx(config.character)
           elseif active_str == "match type desired" then
             config.ranked = not config.ranked
           else
             config.character = active_str
+            play_selection_sfx(config.character)
             --When we select a character, move cursor to "ready"
             active_str = "ready"
             cursor = shallowcpy(name_to_xy["ready"])
@@ -1425,14 +1431,17 @@ function main_net_vs()
     end
 
     local outcome_claim = nil
+    local winSFX = nil
     if P1.game_over and P2.game_over and P1.CLOCK == P2.CLOCK then
       end_text = "Draw"
       outcome_claim = 0
     elseif P1.game_over and P1.CLOCK <= P2.CLOCK then
+      winSFX = P2:pick_win_sfx()
       end_text = op_name.." Wins" .. (currently_spectating and " " or " :(")
       op_win_count = op_win_count + 1 -- leaving these in just in case used with an old server that doesn't keep score.  win_counts will get overwritten after this by the server anyway.
       outcome_claim = P2.player_number
     elseif P2.game_over and P2.CLOCK <= P1.CLOCK then
+      winSFX = P1:pick_win_sfx()
       end_text = my_name.." Wins" .. (currently_spectating and " " or " ^^")
       my_win_count = my_win_count + 1 -- leave this in
       outcome_claim = P1.player_number
@@ -1467,9 +1476,9 @@ function main_net_vs()
       write_replay_file()
       character_select_mode = "2p_net_vs"
       if currently_spectating then
-        return main_dumb_transition, {main_character_select, end_text, 45, 45}
+        return main_dumb_transition, {main_character_select, end_text, 45, 45, winSFX}
       else
-        return main_dumb_transition, {main_character_select, end_text, 45, 180}
+        return main_dumb_transition, {main_character_select, end_text, 45, 180, winSFX}
       end
     end
   end
@@ -1550,15 +1559,18 @@ function main_local_vs()
           P2:local_run()
         end
       end)
+    local winSFX = nil
     if P1.game_over and P2.game_over and P1.CLOCK == P2.CLOCK then
       end_text = "Draw"
     elseif P1.game_over and P1.CLOCK <= P2.CLOCK then
+      winSFX = P2:pick_win_sfx()
       end_text = "P2 wins ^^"
     elseif P2.game_over and P2.CLOCK <= P1.CLOCK then
+      winSFX = P1:pick_win_sfx()
       end_text = "P1 wins ^^"
     end
     if end_text then
-      return main_dumb_transition, {main_select_mode, end_text, 45}
+      return main_dumb_transition, {main_select_mode, end_text, 45, nil, winSFX}
     end
   end
 end
@@ -1673,15 +1685,18 @@ function main_replay_vs()
     if ret then
       return unpack(ret)
     end
+    local winSFX = nil
     if P1.game_over and P2.game_over and P1.CLOCK == P2.CLOCK then
       end_text = "Draw"
     elseif P1.game_over and P1.CLOCK <= P2.CLOCK then
+      winSFX = P2:pick_win_sfx()
       if replay.P2_name and replay.P2_name ~= "anonymous" then
         end_text = replay.P2_name.." wins"
       else
         end_text = "P2 wins"
       end
     elseif P2.game_over and P2.CLOCK <= P1.CLOCK then
+      winSFX = P1:pick_win_sfx()
       if replay.P1_name and replay.P1_name ~= "anonymous" then
         end_text = replay.P1_name.." wins"
       else
@@ -1689,7 +1704,7 @@ function main_replay_vs()
       end
     end
     if end_text then
-      return main_dumb_transition, {main_select_mode, end_text}
+      return main_dumb_transition, {main_select_mode, end_text, nil, nil, winSFX}
     end
   end
 end
@@ -2378,7 +2393,7 @@ function fullscreen()
   return main_select_mode
 end
 
-function main_dumb_transition(next_func, text, timemin, timemax)
+function main_dumb_transition(next_func, text, timemin, timemax, winnerSFX)
   if P1 and P1.character then
     stop_character_sounds(P1.character)
   end
@@ -2387,8 +2402,13 @@ function main_dumb_transition(next_func, text, timemin, timemax)
   end
   love.audio.stop()
   stop_the_music()
-  if not SFX_mute and SFX_GameOver_Play == 1 then
-    sounds.SFX.game_over:play()
+  winnerSFX = winnerSFX or nil
+  if not SFX_mute then
+    if winnerSFX ~= nil then
+      winnerSFX:play()
+    elseif SFX_GameOver_Play == 1 then
+      sounds.SFX.game_over:play()
+    end
   end
   SFX_GameOver_Play = 0
 
