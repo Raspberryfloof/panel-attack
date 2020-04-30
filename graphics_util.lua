@@ -21,20 +21,28 @@ function load_img_from_supported_extensions(path_and_name)
   return nil
 end
 
-function draw(img, x, y, rot, x_scale, y_scale)
-  rot = rot or 0
-  x_scale = x_scale or 1
-  y_scale = y_scale or 1
-  gfx_q:push({love.graphics.draw, {img, x*GFX_SCALE, y*GFX_SCALE,
-  rot, x_scale*GFX_SCALE, y_scale*GFX_SCALE}})
+function draw(img, x, y, rot, x_scale,y_scale)
+  if img then
+    rot = rot or 0
+    x_scale = x_scale or 1
+    y_scale = y_scale or 1
+    gfx_q:push({love.graphics.draw, {img, x*GFX_SCALE, y*GFX_SCALE,
+      rot, x_scale*GFX_SCALE, y_scale*GFX_SCALE}})
+  else 
+    print("Warning: attempted to draw a nil image in draw()!")
+  end
 end
 
 function draw_label(img, x, y, rot, scale, mirror)
-  rot = rot or 0
-  mirror = mirror or 0
-  x = x - (img:getWidth()/GFX_SCALE*scale)*mirror
-  gfx_q:push({love.graphics.draw, {img, x*GFX_SCALE, y*GFX_SCALE,
-  rot, scale, scale}})
+  if img then
+    rot = rot or 0
+    mirror = mirror or 0
+    x = x - (img:getWidth()/GFX_SCALE*scale)*mirror
+    gfx_q:push({love.graphics.draw, {img, x*GFX_SCALE, y*GFX_SCALE,
+    rot, scale, scale}})
+  else 
+    print("Warning: attempted to draw a nil image in draw_label()!")
+  end
 end
 
 function draw_number(number, atlas, frameCount, quads, x, y, scale, x_scale, y_scale, align, mirror)
@@ -117,55 +125,71 @@ function draw_time(time, quads, x, y, x_scale, y_scale)
 end
 
 function qdraw(img, quad, x, y, rot, x_scale, y_scale, x_offset, y_offset, mirror)
-  rot = rot or 0
-  x_scale = x_scale or 1
-  y_scale = y_scale or 1
-  x_offset = x_offset or 0
-  y_offset = y_offset or 0
-  mirror = mirror or 0
+  if img then
+    rot = rot or 0
+    x_scale = x_scale or 1
+    y_scale = y_scale or 1
+    x_offset = x_offset or 0
+    y_offset = y_offset or 0
+    mirror = mirror or 0
 
-  qX, qY, qW, qH = quad:getViewport()
-  if mirror == 1 then
-    x = x - (qW*x_scale)
+    qX, qY, qW, qH = quad:getViewport()
+    if mirror == 1 then
+      x = x - (qW*x_scale)
+    end
+    gfx_q:push({love.graphics.draw, {img, quad, x*GFX_SCALE, y*GFX_SCALE,
+      rot, x_scale*GFX_SCALE, y_scale*GFX_SCALE, x_offset, y_offset}})
+  else 
+    print("Warning: attempted to draw a nil image in qdraw()!")
   end
-  gfx_q:push({love.graphics.draw, {img, quad, x*GFX_SCALE, y*GFX_SCALE,
-    rot, x_scale*GFX_SCALE, y_scale*GFX_SCALE, x_offset, y_offset}})
 end
 
 function menu_draw(img, x, y, rot, x_scale,y_scale)
-  rot = rot or 0
-  x_scale = x_scale or 1
-  y_scale = y_scale or 1
-  gfx_q:push({love.graphics.draw, {img, x, y,
-    rot, x_scale, y_scale}})
+  if img then
+    rot = rot or 0
+    x_scale = x_scale or 1
+    y_scale = y_scale or 1
+    gfx_q:push({love.graphics.draw, {img, x, y,
+      rot, x_scale, y_scale}})
+  else
+    print("Warning: attempted to draw a nil image in menu_draw()!")
+  end
 end
 
 function menu_drawf(img, x, y, halign, valign, rot, x_scale, y_scale)
-  rot = rot or 0
-  x_scale = x_scale or 1
-  y_scale = y_scale or 1
-  halign = halign or "left"
-  if halign == "center" then
-    x = x - math.floor(img:getWidth() * 0.5 * x_scale)
-  elseif halign == "right" then
-    x = x - math.floor(img:getWidth() * x_scale)
+  if img then
+    rot = rot or 0
+    x_scale = x_scale or 1
+    y_scale = y_scale or 1
+    halign = halign or "left"
+    if halign == "center" then
+      x = x - math.floor(img:getWidth() * 0.5 * x_scale)
+    elseif halign == "right" then
+      x = x - math.floor(img:getWidth() * x_scale)
+    end
+    valign = valign or "top"
+    if valign == "center" then
+      y = y - math.floor(img:getHeight() * 0.5 * y_scale)
+    elseif valign == "bottom" then
+      y = y - math.floor(img:getHeight() * y_scale)
+    end
+    gfx_q:push({love.graphics.draw, {img, x, y,
+      rot, x_scale, y_scale}})
+  else
+    print("Warning: attempted to draw a nil image in menu_drawf()!")
   end
-  valign = valign or "top"
-  if valign == "center" then
-    y = y - math.floor(img:getHeight() * 0.5 * y_scale)
-  elseif valign == "bottom" then
-    y = y - math.floor(img:getHeight() * y_scale)
-  end
-  gfx_q:push({love.graphics.draw, {img, x, y,
-    rot, x_scale, y_scale}})
 end
 
 function menu_drawq(img, quad, x, y, rot, x_scale,y_scale)
-  rot = rot or 0
-  x_scale = x_scale or 1
-  y_scale = y_scale or 1
-  gfx_q:push({love.graphics.draw, {img, quad, x, y,
-    rot, x_scale, y_scale}})
+  if img then
+    rot = rot or 0
+    x_scale = x_scale or 1
+    y_scale = y_scale or 1
+    gfx_q:push({love.graphics.draw, {img, quad, x, y,
+      rot, x_scale, y_scale}})
+  else
+    print("Warning: attempted to draw a nil image in menu_drawq()!")
+  end
 end
 
 function grectangle(mode, x, y, w, h)

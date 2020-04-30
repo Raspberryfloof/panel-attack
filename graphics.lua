@@ -63,7 +63,7 @@ function Stack.draw_cards(self)
         end
       end
       -- draw card
-      draw(themes[config.theme].images.IMG_cards[card.chain][card.n], draw_x, draw_y)
+      draw((themes[config.theme].images.IMG_cards[card.chain][card.n] or themes[config.theme].images.IMG_cards[card.chain][0]) or themes[config.theme].images.empty, draw_x, draw_y)
     end
   end
 end

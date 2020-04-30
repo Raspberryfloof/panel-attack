@@ -104,6 +104,8 @@ function Theme.graphics_init(self)
     self.images.flags[flag] = load_theme_img("flags/"..flag)
   end
 
+  self.images.empty = load_theme_img("empty")
+
   self.images.bg_main = load_theme_img("background/main")
   self.images.bg_select_screen = load_theme_img("background/select_screen")
   self.images.bg_readme = load_theme_img("background/readme")
@@ -222,18 +224,11 @@ function Theme.graphics_init(self)
   self.images.IMG_cards = {}
   self.images.IMG_cards[true] = {}
   self.images.IMG_cards[false] = {}
-  for i=4,66 do
-    self.images.IMG_cards[false][i] = load_theme_img("combo/combo"
-      ..tostring(math.floor(i/10))..tostring(i%10).."")
+  for i=0,72 do
+    self.images.IMG_cards[false][i] = load_theme_img(string.format("combo/combo%02d",i))
   end
-  for i=2,13 do
-    self.images.IMG_cards[true][i] = load_theme_img("chain/chain"
-      ..tostring(math.floor(i/10))..tostring(i%10).."")
-  end
-
-  self.images.IMG_cards[true][14] = load_theme_img("chain/chain00")
-  for i=15,99 do
-    self.images.IMG_cards[true][i] = self.images.IMG_cards[true][14]
+  for i=0,99 do
+    self.images.IMG_cards[true][i] = load_theme_img(string.format("chain/chain%02d",i))
   end
 
   local MAX_SUPPORTED_PLAYERS = 2
