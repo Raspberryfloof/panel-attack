@@ -224,7 +224,7 @@ function Theme.graphics_init(self)
   self.images.IMG_cards = {}
   self.images.IMG_cards[true] = {}
   self.images.IMG_cards[false] = {}
-  for i=0,72 do
+  for i=0,99 do
     self.images.IMG_cards[false][i] = load_theme_img(string.format("combo/combo%02d",i))
   end
   for i=0,99 do
