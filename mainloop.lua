@@ -152,7 +152,8 @@ do
         {loc("mm_configure"), main_config_input},
         {loc("mm_set_name"), main_set_name},
         {loc("mm_options"), options.main},
-        {loc("mm_music_test"), main_music_test}
+        {loc("mm_music_test"), main_music_test},
+        {"This causes an error", this_causes_an_error}
     }
     if love.graphics.getSupported("canvas") then
       items[#items+1] = {loc("mm_fullscreen", "(LAlt+Enter)"), fullscreen}
@@ -1663,9 +1664,13 @@ function main_dumb_transition(next_func, text, timemin, timemax, winnerSFX)
   end
 end
 
+function this_causes_an_error(...)
+  error("I'm Free!!!!")
+end
+
 function exit_game(...)
- love.event.quit()
- return main_select_mode
+  love.event.quit()
+  return main_select_mode
 end
 
 function love.quit()
