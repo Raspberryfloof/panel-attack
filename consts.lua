@@ -168,7 +168,10 @@ level_to_chain_constant        = { 80, 77, 74, 71, 68, 65, 62, 60, 58, 56, 53}
 level_to_chain_coefficient     = { 20, 18, 16, 14, 12, 10,  8,  6,  4,  2, 1}
 -- How many panels you have to pop to earn a metal panel in your next row.
 level_to_metal_panel_frequency = { 12, 14, 16, 19, 23, 26, 29, 33, 37, 41, 18}
--- How many panels you can have at most in your metal panel queue.
+-- How many metal panels you can receive at most during one round.
+-- Note: base Panel de Pon (SFC)/Tetris Attack (SNES) attempts to cap the total number of metal panels
+-- you get for a round, but accidentally forgets to cap player 2, so they can get infinite metal panels.
+-- As a compromise, we currently just allow both players to get infinite metal panels, so this is unused.
 level_to_metal_panel_cap       = { 21, 18, 18, 15, 15, 12,  9,  6,  6,  3, 3}
 
 -- Stage clear seems to use a variant of vs mode's speed system,

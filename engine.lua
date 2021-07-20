@@ -1125,8 +1125,11 @@ function Stack.PdP(self)
             -- it should be removed immediately!
             if panel.combo_size == panel.combo_index then
               self.panels_cleared = self.panels_cleared + 1
+              -- Note: base Panel de Pon (SFC)/Tetris Attack (SNES) attempts to cap the total number of metal panels
+              -- you get for a round, but accidentally forgets to cap player 2, so they can get infinite metal panels.
+              -- As a compromise, we'll just allow both players to get infinite metal panels.
               if self.mode == "vs" and self.panels_cleared % level_to_metal_panel_frequency[self.level] == 0 then
-                self.metal_panels_queued = min(self.metal_panels_queued + 1, level_to_metal_panel_cap[self.level])
+                self.metal_panels_queued = self.metal_panels_queued + 1
               end
               SFX_Pop_Play = 1
               self.poppedPanelIndex = panel.combo_index
@@ -1142,8 +1145,11 @@ function Stack.PdP(self)
               panel.timer = (panel.combo_size-panel.combo_index)
                   * self.FRAMECOUNT_POP
               self.panels_cleared = self.panels_cleared + 1
+              -- Note: base Panel de Pon (SFC)/Tetris Attack (SNES) attempts to cap the total number of metal panels
+              -- you get for a round, but accidentally forgets to cap player 2, so they can get infinite metal panels.
+              -- As a compromise, we'll just allow both players to get infinite metal panels.
               if self.mode == "vs" and self.panels_cleared % level_to_metal_panel_frequency[self.level] == 0 then
-                self.metal_panels_queued = min(self.metal_panels_queued + 1, level_to_metal_panel_cap[self.level])
+                self.metal_panels_queued = self.metal_panels_queued + 1
               end
               SFX_Pop_Play = 1
               self.poppedPanelIndex = panel.combo_index
